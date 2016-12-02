@@ -3,7 +3,7 @@
 	Plugin Name: Vulnerable Plugin Checker
 	Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 	Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-	Version: 0.1.3
+	Version: 0.2.4
 	Author: Storm Rockwell
 	Author URI: http://www.stormrockwell.com
 	License: GPL2v2
@@ -53,9 +53,11 @@ function vpc_settings_page() {
 		        </tr>
 		        
 		        <tr valign="top">
-		       	 <th scope="row">Alert Email Address</th>
+		       		<th scope="row">Alert Email Address</th>
 		        	<td><input type="text" name="vpc_alert_email" placeholder="Email Address" value="<?php echo esc_attr( get_option('vpc_alert_email') ); ?>" /></td>
 		        </tr>
+
+		        <tr><td colspan="2">You can include multiple emails by sepperating them with commas</td></tr>
 
 		    </table>
 		    
@@ -119,7 +121,7 @@ function vpc_get_installed_plugins() {
 		$plugin_url = get_admin_url() . 'plugins.php';
 		$vpc_url = get_admin_url() . 'tools.php?page=vpc-settings';
 		$message = 'We have detected one or more of your plugins are vulnerable. (' . implode(', ', $vuln_plugins) . '). ' . "\n\n" . 'Please log into your website here: ' . $plugin_url . ' and update your plugins.' .  "\n\n" . 'This message was sent automatically from "Vulnerable Plugin Checker". ' . "\n\n" . 'If you wish to stop recieving emails regarding vulnerabilites, you can disable them in the VPC Settings Page: ' . $vpc_url ;
-		$email = get_option('vpc_alert_email');
+		$email = explode(',', get_option('vpc_alert_email'));
 		if(empty($email)) {
 			$email = get_option('admin_email');
 		}
@@ -142,26 +144,29 @@ function vpc_get_installed_plugins_cache() {
 
 		foreach($plugins as $key => $plugin) {
 
-			$plugin['Version'] = $plugins_nc[$key]['Version'];
+			if(isset($plugins_nc[$key]['Version'])) {
 
-			if(isset($plugin['vulnerabilities']) && is_array($plugin['vulnerabilities'])) {
+				$plugin['Version'] = $plugins_nc[$key]['Version'];
 
-				foreach($plugin['vulnerabilities'] as $vulnerability) {
+				if(isset($plugin['vulnerabilities']) && is_array($plugin['vulnerabilities'])) {
 
-					// if plugin fix is greater than current version, assume it could be vulnerable
-					if(version_compare($vulnerability['fixed_in'], $plugin['Version']) > 0) {			
-						$plugin['is_known_vulnerable'] = 'true';
-						$vuln_plugins[] = $plugin;
-					} else {
-						$plugin['is_known_vulnerable'] = 'false';
+					foreach($plugin['vulnerabilities'] as $vulnerability) {
+
+						// if plugin fix is greater than current version, assume it could be vulnerable
+						if(version_compare($vulnerability['fixed_in'], $plugin['Version']) > 0) {			
+							$plugin['is_known_vulnerable'] = 'true';
+							$vuln_plugins[] = $plugin;
+						} else {
+							$plugin['is_known_vulnerable'] = 'false';
+						}
+
 					}
 
 				}
 
-			}
-			
+				$plugins[$key] = $plugin;
 
-			$plugins[$key] = $plugin;
+			}
 		}
 		return $plugins;
 	} else {
@@ -240,10 +245,10 @@ function vpc_on_deactivation() {
 	wp_clear_scheduled_hook('vpc_pull_db_data_event');
 }
 
-add_filter('wp_mail_from','vpc_wp_mail_from');
+/*add_filter('wp_mail_from','vpc_wp_mail_from');
 function vpc_wp_mail_from($content_type) {
 	return get_option('admin_email');
-}
+}*/
 
 // add settings to plugin page
 function add_vpc_settings_link ( $links ) {
@@ -252,5 +257,31 @@ function add_vpc_settings_link ( $links ) {
 }
 add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'add_vpc_settings_link' );
 
+function detect_plugin_activation(  $plugin, $network_activation ) {
+    vpc_get_installed_plugins();
+}
+add_action( 'activated_plugin', 'detect_plugin_activation', 10, 2 );
 
-?>
+function vpc_admin_notice__success() {
+	global $pagenow;
+
+	$plugins = vpc_get_installed_plugins_cache();
+
+	$any_vulnerable = false;
+	foreach($plugins as $plugin) {
+		if(isset($plugin['is_known_vulnerable']) && $plugin['is_known_vulnerable'] == 'true') {
+			$any_vulnerable = true;
+		}
+	}
+
+	if(!$any_vulnerable && $pagenow == 'plugins.php') {
+
+    ?>
+	    <div class="notice notice-success is-dismissible">
+	        <p><?php _e( '<b>Vulnerable Plugin Checker: </b>Your plugins have no known vulnerabilities', 'sample-text-domain' ); ?></p>
+	    </div>
+    <?php
+	
+	}
+}
+add_action( 'admin_notices', 'vpc_admin_notice__success' );
