@@ -277,7 +277,7 @@
 			$string  = '<tr class="active update">';
 			$string .=    '<td style="border-left: 4px solid #d54e21; border-bottom: 1px solid #E2E2E2;">&nbsp;</td>';
 			$string .=    '<td colspan="2" style="border-bottom: 1px solid #E2E2E2; color: #D54E21; font-weight: 600;">'; 
-			$string .=       $plugin_file . $plugin_data['Name'] . ' has a known vulnerability that may be affecting this version. Please update this plugin. <a target="_blank" href="https://wpvulndb.com/search?utf8=✓&text=' . $plugin_data['Name'] . '">View Vulnerabilities</a>';
+			$string .=       $plugin_data['Name'] . ' has a known vulnerability that may be affecting this version. Please update this plugin. <a target="_blank" href="https://wpvulndb.com/search?utf8=✓&text=' . $plugin_data['Name'] . '">View Vulnerabilities</a>';
 			$string .=    '</td>';
 			$stirng .= '</tr>';
 
