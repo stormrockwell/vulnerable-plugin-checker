@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.2.4
+		Version: 0.3
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2
@@ -24,13 +24,17 @@
 
 
 	class Vulnerable_Plugin_Checker {
-		public $title = 'Vulnerable Plugin Checker';
+		public $title;
+		public $menu_title;
 		public $api_url = 'https://wpvulndb.com/api/v2/plugins/';
 
 		/**
 		 * Constructor
 		 */
 		public function __construct() {
+			$this->title = __( 'Vulnerable Plugin Checker', 'vulnerable-plugin-checker' );
+			$this->menu_title = __( 'VPC Settings', 'vulnerable-plugin-checker' );
+
 			add_action( 'admin_head-plugins.php', array( $this, 'plugins_page_admin_head' ) );
 
 			register_activation_hook( __FILE__, array( $this, 'on_activation' ) );
@@ -41,6 +45,68 @@
 
 			add_action( 'activated_plugin', array( $this, 'get_installed_plugins' ), 10, 2 );
 			add_action( 'upgrader_process_complete', array( $this, 'get_installed_plugins' ), 10, 2 );
+
+			add_action( 'admin_menu', array( $this, 'add_menu_pages' ) );
+
+			add_action( 'admin_init', array( $this, 'register_fields' ) );
+		}
+
+		/**
+		 * Register Fields
+		 * register backend fields for the settings page
+		 */
+		public function register_fields() {
+			register_setting( 'vpc-settings-group', 'email_address' );
+			register_setting( 'vpc-settings-group', 'allow_emails' );
+		}
+
+		/**
+		 * Add Menu Pages
+		 * adds menu/submenu pages to the dashboard
+		 */
+		public function add_menu_pages() {
+			add_submenu_page( 'tools.php', $this->title, $this->menu_title, 'manage_options', 'vpc-settings', array( $this, 'settings_page' ) );
+		}
+
+		/**
+		 * Settings Page
+		 * dashboard page to manage settings
+		 */
+		public function settings_page() {
+
+			$allow_emails_checked = get_option( 'allow_emails' ) ? 'checked' : '';
+
+			$string  = '<div class="wrap">';
+			$string .=    '<h2>' . $this->title . ' Settings</h2>';
+			$string .=    '<form method="post" action="options.php">';
+
+			// need to echo because there is no get_settings_field
+			echo $string;
+
+			settings_fields( 'vpc-settings-group' );
+			do_settings_sections( 'vpc-settings-group' );
+
+			// restart string
+			$string  =       '<table class="form-table">';
+			$string .=          '<tr valign="top">';
+			$string .=             '<th scope="row">' . __( 'Email Address:', 'vulnerable-plugin-checker' ) . '</th>';
+			$string .=             '<td>';
+			$string .=                '<input type="text" name="email_address" placeholder="' . esc_attr( get_option( 'admin_email' ) ) . '" value="' . esc_attr( get_option( 'email_address' ) ) . '" />';
+			$string .=             '</td>';
+			$string .=          '</tr>';
+			$string .=          '<tr valign="top">';
+			$string .=             '<th scope="row">' . __( 'Allow Email Alerts:', 'vulnerable-plugin-checker' ) . '</th>';
+			$string .=             '<td>';
+			$string .=                '<input type="checkbox" name="allow_emails" ' . $allow_emails_checked . ' />';
+			$string .=             '</td>';
+			$string .=          '</tr>';
+			$string .=       '</table>';
+			$string .=        get_submit_button();
+			$string .=    '</form>';
+			$string .= '</div>';
+
+			echo $string;
+			
 		}
 
 		/**
@@ -63,6 +129,7 @@
 
 			if ( isset( $installed_plugins[ $file_path ]['Version'] ) ) {
 
+				// updated the cached version with the one taken from the currently installed
 				$plugin['Version'] = $installed_plugins[ $file_path ]['Version'];
 
 				if ( isset( $plugin['vulnerabilities'] ) && is_array( $plugin['vulnerabilities'] ) ) {
@@ -154,7 +221,7 @@
 				$plugin = $this->get_fresh_plugin_vulnerabilities( $plugin, $key );
 				$plugins[ $key ] = $plugin;
 			
-				if ( isset( $plugin['is_known_vulnerable'] ) && $plugin['is_known_vulnerable'] == 'true' ) {	
+				if ( isset( $plugin['is_known_vulnerable'] ) && 'true' == $plugin['is_known_vulnerable'] ) {	
 					$name = $plugin['Name'];
 					$vuln_plugins[] = $plugin['Name'];
 				}
@@ -168,10 +235,24 @@
 
 				$plugin_url = get_admin_url() . 'plugins.php';
 				$vpc_url = get_admin_url() . 'tools.php?page=vpc-settings';
-				$message = 'We have detected one or more of your plugins are vulnerable. (' . implode( ', ', $vuln_plugins ) . '). ' . "\n\n" . 'Please log into your website here: ' . $plugin_url . ' and update your plugins.' .  "\n\n" . 'This message was sent automatically from "Vulnerable Plugin Checker". ' . "\n\n" . 'If you wish to stop recieving emails regarding vulnerabilites, you can disable them in the VPC Settings Page: ' . $vpc_url;
-				$email = get_option( 'admin_email' );
 
-				wp_mail( $email, get_option( 'blogname' ) . ' - Vulnerability Detected', $message );
+				$message = sprintf(
+								/* translators: 1: plugins url, 2: Vulnerable Plugin Checker, 3: Vulnerable Plugin Checker url */
+								__( "We have detected one or more of your plugins are vulnerable.\n\nPlease log into your website here: %1$s and update your plugins.\n\nThis message was sent automatically from %2$s.\n\nIf you wish to stop recieving emails regarding vulnerabilites, you can disable them in the <a href=\"%3$s\">VPC Settings Page</a>", 'vulnerable-plugin-checker' ),
+								$plugins_url,
+								$this->title,
+								$vpc_url
+							);
+
+				$subject = sprintf(
+								/* translators: %s: blog name */
+								__( '%s - Vulnerability Detected', 'vulnerable-plugin-checker' ),
+								get_option( 'blogname' )
+							);
+
+				$to = get_option( 'admin_email' );
+
+				wp_mail( $to, ' - Vulnerability Detected', $message );
 
 			}
 
@@ -242,12 +323,14 @@
 			foreach ( $plugins as $plugin ) {
 
 				$path = $plugin['file_path'];
+				$added_notice = false;
 
 				if ( isset( $plugin['is_known_vulnerable'] ) &&  'true' == $plugin['is_known_vulnerable'] ) {
 					add_action( 'after_plugin_row_' . $path, array( $this, 'after_row_text' ), 10, 3 );
 
 					if ( ! $added_notice ) {
 						add_action( 'admin_notices', array( $this, 'vulnerable_admin_notice' ) );
+						$added_notice = true;
 					}
 				}	
 
@@ -261,7 +344,7 @@
 		 */
 		public function vulnerable_admin_notice() {
 			$class = 'notice notice-error';
-			$message = __( '<strong>VPC:</strong> One or more plugins currently installed have known vulnerabilities with their current version. I suggest updating each vulnerable plugin if an update is available', 'sample-text-domain' );
+			$message = __( '<strong>VPC:</strong> One or more plugins currently installed have known vulnerabilities with their current version. I suggest updating each vulnerable plugin if an update is available', 'vulnerable-plugin-checker' );
 
 			printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message ); 
 		}
@@ -274,10 +357,16 @@
 		 */
 		public function after_row_text( $plugin_file, $plugin_data, $status ) {
 
+			$message =  sprintf(
+							/* translators: 1: plugin name */ 
+							__( '%1$s has a known vulnerability that may be affecting this version. Please update this plugin. <a target="_blank" href="https://wpvulndb.com/search?utf8=✓&text=%1$s">View Vulnerabilities</a>', 'vulnerable-plugin-checker' ), 
+							$plugin_data['Name'] 
+						);
+
 			$string  = '<tr class="active update">';
 			$string .=    '<td style="border-left: 4px solid #d54e21; border-bottom: 1px solid #E2E2E2;">&nbsp;</td>';
 			$string .=    '<td colspan="2" style="border-bottom: 1px solid #E2E2E2; color: #D54E21; font-weight: 600;">'; 
-			$string .=       $plugin_data['Name'] . ' has a known vulnerability that may be affecting this version. Please update this plugin. <a target="_blank" href="https://wpvulndb.com/search?utf8=✓&text=' . $plugin_data['Name'] . '">View Vulnerabilities</a>';
+			$string .=       $message;
 			$string .=    '</td>';
 			$stirng .= '</tr>';
 
