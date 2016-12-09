@@ -3,7 +3,7 @@ Contributors: stormrockwell
 Tags: vulnerable,vulnerability,plugin,plugins,checker,scanner,wpscan,wpvulndb,security
 Requires at least: 4.0
 Tested up to: 4.7
-Stable tag: 0.3.2
+Stable tag: 0.3.4
 License: GPLv2
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
@@ -42,6 +42,11 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 2. Backend display of the VPC Settings page (Tools > VPC Settings)
 
 == Changelog ==
+
+= 0.3.4 =
+
+- fixed minor email bug
+
 
 = 0.3.2 =
 
