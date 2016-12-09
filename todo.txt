@@ -1,8 +1,8 @@
-add SMTP tip & test email
 add email frequency option
 View Vulnerabilities as a dropdown
 detailed email with vulnerabilities
 check past plugin vulnerabilities
+error message if email fails to send automatically
+
 check past vulnerabilities button while searching plugins
-Plugins have vulnerabilities
 on update/install - js check vulnerabilities

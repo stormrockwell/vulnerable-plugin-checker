@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.3
+		Version: 0.3.1
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2
@@ -74,7 +74,7 @@
 		 */
 		public function settings_page() {
 
-			$allow_emails_checked = get_option( 'allow_emails' ) ? 'checked' : '';
+			$allow_emails_checked = get_option( 'vpc_allow_emails' ) ? 'checked' : '';
 
 			$string  = '<div class="wrap">';
 			$string .=    '<h2>' . $this->title . ' Settings</h2>';
@@ -254,7 +254,7 @@
 
 				$message = sprintf(
 								/* translators: 1: plugins url, 2: Vulnerable Plugin Checker, 3: Vulnerable Plugin Checker url */
-								__( "We have detected one or more of your plugins are vulnerable.\n\nPlease log into your website here: %1$s and update your plugins.\n\nThis message was sent automatically from %2$s.\n\nIf you wish to stop recieving emails regarding vulnerabilites, you can disable them in the <a href=\"%3$s\">VPC Settings Page</a>", 'vulnerable-plugin-checker' ),
+								__( 'We have detected one or more of your plugins are vulnerable.' . "\n\n" . 'Please log into your website here: %1$s and update your plugins.' . "\n\n" . 'This message was sent automatically from %2$s.' . "\n\n" . 'If you wish to stop recieving emails regarding vulnerabilites, you can disable them in the VPC Settings Page: %3$s', 'vulnerable-plugin-checker' ),
 								$plugins_url,
 								$this->title,
 								$vpc_url
@@ -271,8 +271,10 @@
 					$to = get_option( 'admin_email' );
 				}
 
-				wp_mail( $to, ' - Vulnerability Detected', $message );
+				wp_mail( $to, $subject, $message );
 
+			} else {
+				echo 'STILL NAWWWW';
 			}
 
 			return $plugins;
@@ -341,7 +343,7 @@
 		public function admin_head() {
 			global $pagenow;
 
-			$plugins = $this->get_installed_plugins_cache();
+			$plugins = $this->get_installed_plugins();
 
 			// add after plugin row text
 			foreach ( $plugins as $plugin ) {
