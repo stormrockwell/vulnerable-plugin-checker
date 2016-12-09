@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.3.4
+		Version: 0.3.5
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2

@@ -3,7 +3,7 @@ Contributors: stormrockwell
 Tags: vulnerable,vulnerability,plugin,plugins,checker,scanner,wpscan,wpvulndb,security
 Requires at least: 4.0
 Tested up to: 4.7
-Stable tag: 0.3.4
+Stable tag: 0.3.5
 License: GPLv2
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
@@ -18,7 +18,7 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 * Automatic vulnerability detection in plugins utilizing WPScan's API
 * Optional email alerts
 * Utilizes WP Cron to check for new security updates twice a day
-* Cached API results to increase backend load time significantly
+* Cached API results to decrease backend load time significantly
 
 == Installation ==
 
@@ -43,10 +43,13 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 
 == Changelog ==
 
+= 0.3.5 =
+
+- fixed readme error
+
 = 0.3.4 =
 
 - fixed minor email bug
-
 
 = 0.3.2 =
 
