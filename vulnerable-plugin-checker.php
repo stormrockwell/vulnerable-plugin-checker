@@ -35,7 +35,7 @@
 			$this->title = __( 'Vulnerable Plugin Checker', 'vulnerable-plugin-checker' );
 			$this->menu_title = __( 'VPC Settings', 'vulnerable-plugin-checker' );
 
-			add_action( 'admin_head-plugins.php', array( $this, 'plugins_page_admin_head' ) );
+			add_action( 'admin_head', array( $this, 'admin_head' ) );
 
 			register_activation_hook( __FILE__, array( $this, 'on_activation' ) );
 			add_action( 'vpc_pull_db_data_event', array( $this, 'get_installed_plugins' ) );
@@ -56,8 +56,8 @@
 		 * register backend fields for the settings page
 		 */
 		public function register_fields() {
-			register_setting( 'vpc-settings-group', 'email_address' );
-			register_setting( 'vpc-settings-group', 'allow_emails' );
+			register_setting( 'vpc-settings-group', 'vpc_email_address' );
+			register_setting( 'vpc-settings-group', 'vpc_allow_emails' );
 		}
 
 		/**
@@ -87,17 +87,24 @@
 			do_settings_sections( 'vpc-settings-group' );
 
 			// restart string
-			$string  =       '<table class="form-table">';
+			$string  =       '<p>';
+			$string .=          sprintf( 
+									/* translators: %s: admin url for wp mail smtp plugin */
+									__( 'Please use an SMTP plugin such as <a href="%s">WP Mail SMTP</a> to prevent dropped emails.', 'vulnerable-plugin-checker' ),
+									admin_url( 'plugin-install.php?s=wp+mail+smtp&tab=search&type=term' )
+								);
+			$string .=       '</p>';
+			$string .=       '<table class="form-table">';
 			$string .=          '<tr valign="top">';
 			$string .=             '<th scope="row">' . __( 'Email Address:', 'vulnerable-plugin-checker' ) . '</th>';
 			$string .=             '<td>';
-			$string .=                '<input type="text" name="email_address" placeholder="' . esc_attr( get_option( 'admin_email' ) ) . '" value="' . esc_attr( get_option( 'email_address' ) ) . '" />';
+			$string .=                '<input type="text" name="vpc_email_address" placeholder="' . esc_attr( get_option( 'admin_email' ) ) . '" value="' . esc_attr( get_option( 'email_address' ) ) . '" />';
 			$string .=             '</td>';
 			$string .=          '</tr>';
 			$string .=          '<tr valign="top">';
 			$string .=             '<th scope="row">' . __( 'Allow Email Alerts:', 'vulnerable-plugin-checker' ) . '</th>';
 			$string .=             '<td>';
-			$string .=                '<input type="checkbox" name="allow_emails" ' . $allow_emails_checked . ' />';
+			$string .=                '<input type="checkbox" name="vpc_allow_emails" ' . $allow_emails_checked . ' />';
 			$string .=             '</td>';
 			$string .=          '</tr>';
 			$string .=       '</table>';
@@ -122,6 +129,11 @@
 
 			// TODO: convert to cached installed plugins
 			if ( ! is_array( $installed_plugins ) ) {
+
+				if ( ! function_exists( 'get_plugins' ) ) {
+			        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			    }
+
 				$installed_plugins = get_plugins();
 			}
 
@@ -197,8 +209,8 @@
 		public function set_text_domain( $plugin ) {
 
 			// get text domain from folder if it isn't listed
-			if ( empty( $plugin['TextDomain'] ) ) {
-				$folder_name = explode( '/', $key );
+			if ( empty( $plugin['TextDomain'] ) && isset( $plugin['file_path'] ) ) {
+				$folder_name = explode( '/', $plugin['file_path'] );
 				$plugin['TextDomain'] = $folder_name[0];
 			}
 
@@ -211,7 +223,11 @@
 		 * gets the installed plugins, checks for vulnerabilities in them, caches the data, sends email if vulnerabilities detected
 		 * @return array installed plugins with vulnerability data
 		 */
-		public function get_installed_plugins() {
+		public function get_installed_plugins( $email = true ) {
+
+			if ( ! function_exists( 'get_plugins' ) ) {
+		        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		    }
 
 			$plugins = get_plugins();
 			$vuln_plugins = array();
@@ -231,10 +247,10 @@
 			update_option( 'vpc-plugin-data', json_encode( $plugins ) );
 
 			// send email if vulnderabilities have been detected
-			if ( ! empty( $vuln_plugins ) ) {
+			if ( ! empty( $vuln_plugins ) && $email && get_option( 'vpc_allow_emails' ) ) {
 
-				$plugin_url = get_admin_url() . 'plugins.php';
-				$vpc_url = get_admin_url() . 'tools.php?page=vpc-settings';
+				$plugins_url = get_admin_url( null, 'plugins.php' );
+				$vpc_url = get_admin_url( null, 'tools.php?page=vpc-settings' );
 
 				$message = sprintf(
 								/* translators: 1: plugins url, 2: Vulnerable Plugin Checker, 3: Vulnerable Plugin Checker url */
@@ -247,10 +263,13 @@
 				$subject = sprintf(
 								/* translators: %s: blog name */
 								__( '%s - Vulnerability Detected', 'vulnerable-plugin-checker' ),
-								get_option( 'blogname' )
+								get_bloginfo( 'blogname' )
 							);
 
-				$to = get_option( 'admin_email' );
+				$to = get_option( 'vpc_email_address' );
+				if ( ! isset( $to ) ) {
+					$to = get_option( 'admin_email' );
+				}
 
 				wp_mail( $to, ' - Vulnerability Detected', $message );
 
@@ -269,6 +288,10 @@
 
 			$plugin_data = get_option( 'vpc-plugin-data' );
 			if ( ! empty( $plugin_data ) ) {
+
+				if ( ! function_exists( 'get_plugins' ) ) {
+			        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			    }
 
 				$plugins = json_decode( get_option( 'vpc-plugin-data' ), true ); 
 				$installed_plugins = get_plugins();
@@ -311,11 +334,12 @@
 		}
 
 		/**
-		 * Plugins Page Admin Head
+		 * Admin Head
 		 * gets installed plugins cache, adds after row text and notices based on the results for the plugin page
 		 * @return null
 		 */
-		public function plugins_page_admin_head() {
+		public function admin_head() {
+			global $pagenow;
 
 			$plugins = $this->get_installed_plugins_cache();
 
@@ -343,7 +367,7 @@
 		 * prints out error message if plugin(s) is/are vulnerable
 		 */
 		public function vulnerable_admin_notice() {
-			$class = 'notice notice-error';
+			$class = 'notice notice-error is-dismissible';
 			$message = __( '<strong>VPC:</strong> One or more plugins currently installed have known vulnerabilities with their current version. I suggest updating each vulnerable plugin if an update is available', 'vulnerable-plugin-checker' );
 
 			printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message ); 
@@ -368,7 +392,7 @@
 			$string .=    '<td colspan="2" style="border-bottom: 1px solid #E2E2E2; color: #D54E21; font-weight: 600;">'; 
 			$string .=       $message;
 			$string .=    '</td>';
-			$stirng .= '</tr>';
+			$string .= '</tr>';
 
 			echo $string;
 
@@ -385,7 +409,13 @@
 				add_option( 'vpc-plugin-data', '' );
 			}
 
+			if ( ! get_option( 'vpc_allow_emails' ) ) {
+				add_option( 'vpc_allow_emails', 1 );
+			}
+
 			wp_schedule_event( time(), 'twicedaily', 'vpc_pull_db_data_event' );
+
+			$this->get_installed_plugins( false );
 
 		}
 
@@ -404,7 +434,7 @@
 		 * @param array $links links that appear in the plugin row
 		 */
 		public function add_settings_link( $links ) {
-		    $links[] = '<a href="' . admin_url( 'tools.php?page=vpc-settings' ) . '">Settings</a>';
+		    $links[] = '<a href="' . get_admin_url( null, 'tools.php?page=vpc-settings' ) . '">Settings</a>';
 		    return $links;
 		}
 

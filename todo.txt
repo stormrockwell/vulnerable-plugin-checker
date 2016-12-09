@@ -1,7 +1,6 @@
-add page
-add email field
 add SMTP tip & test email
 add email frequency option
+View Vulnerabilities as a dropdown
 detailed email with vulnerabilities
 check past plugin vulnerabilities
 check past vulnerabilities button while searching plugins
