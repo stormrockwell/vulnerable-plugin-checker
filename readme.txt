@@ -3,7 +3,7 @@ Contributors: stormrockwell
 Tags: vulnerable,vulnerability,plugin,plugins,checker,scanner,wpscan,wpvulndb,security
 Requires at least: 4.0
 Tested up to: 4.7
-Stable tag: 0.3
+Stable tag: 0.3.2
 License: GPLv2
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
@@ -43,7 +43,7 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 
 == Changelog ==
 
-= 0.3.1 =
+= 0.3.2 =
 
 - changed language
 
