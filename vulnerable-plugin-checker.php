@@ -319,17 +319,15 @@
 		public function get_plugin_security_json( $text_domain ) {
 
 			$url = $this->api_url . $text_domain;
+			$request = wp_remote_get( $url );
 
-			$ch = curl_init();
-			curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
-			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
-			curl_setopt( $ch, CURLOPT_URL, $url );
-			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
-			curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 6 );
-			$data = curl_exec( $ch );
-			curl_close( $ch );
+			if ( is_wp_error( $request ) ) {
+			    return false;
+			}
 
-			return json_decode( $data );
+			$body = wp_remote_retrieve_body( $request );
+
+			return json_decode( $body );
 
 		}
 
