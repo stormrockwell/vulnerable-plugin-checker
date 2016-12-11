@@ -27,6 +27,7 @@
 		public $title;
 		public $menu_title;
 		public $api_url = 'https://wpvulndb.com/api/v2/plugins/';
+		public $vulnerability_url = 'https://wpvulndb.com/vulnerabilities/';
 
 		/**
 		 * Constructor
@@ -286,18 +287,17 @@
 		 */
 		public function get_installed_plugins_cache() {
 
-			$plugin_data = get_option( 'vpc-plugin-data' );
+			$plugin_data = json_decode( get_option( 'vpc-plugin-data' ) );
 			if ( ! empty( $plugin_data ) ) {
 
 				if ( ! function_exists( 'get_plugins' ) ) {
 			        require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			    }
 
-				$plugins = json_decode( get_option( 'vpc-plugin-data' ), true ); 
-				$installed_plugins = get_plugins();
+				$plugins = json_decode( get_option( 'vpc-plugin-data' ), true );
 
 				foreach ( $plugins as $key => $plugin ) {
-					$plugin = $this->get_fresh_plugin_vulnerabilities( $plugin, $key );
+					$plugin = $this->get_cached_plugin_vulnerabilities( $plugin, $key );
 					$plugins[ $key ] = $plugin;
 				}
 
@@ -379,16 +379,45 @@
 		 */
 		public function after_row_text( $plugin_file, $plugin_data, $status ) {
 
+			global $vpc_plugin_data;
+
+			if ( ! is_array( $vpc_plugin_data ) ) {
+				$vpc_plugin_data = json_decode( get_option( 'vpc-plugin-data' ), true );
+			}
+
 			$message =  sprintf(
 							/* translators: 1: plugin name */ 
-							__( '%1$s has a known vulnerability that may be affecting this version. Please update this plugin. <a target="_blank" href="https://wpvulndb.com/search?utf8=✓&text=%1$s">View Vulnerabilities</a>', 'vulnerable-plugin-checker' ), 
+							__( '%1$s has a known vulnerability that may be affecting this version. Please update this plugin.', 'vulnerable-plugin-checker' ), 
 							$plugin_data['Name'] 
 						);
 
 			$string  = '<tr class="active update">';
 			$string .=    '<td style="border-left: 4px solid #d54e21; border-bottom: 1px solid #E2E2E2;">&nbsp;</td>';
-			$string .=    '<td colspan="2" style="border-bottom: 1px solid #E2E2E2; color: #D54E21; font-weight: 600;">'; 
-			$string .=       $message;
+			$string .=    '<td colspan="2" style="border-bottom: 1px solid #E2E2E2; color: #D54E21;">'; 
+			$string .=       '<p style="color: #D54E21"><strong>' . $message . '</strong></p>';
+			
+			$string .=       '<table>';
+
+			$vulnerabilities = $this->get_cached_plugin_vulnerabilities( $vpc_plugin_data[ $plugin_file ], $plugin_file );
+			foreach ( $vulnerabilities['vulnerabilities'] as $vulnerability ) {
+
+				$fixed_in = '';
+				if ( isset( $vulnerability['fixed_in'] ) ) {
+					$fixed_in = sprintf( 
+									/* translators: %s: plugin version number */
+									__( 'Fixed in version: %s' ), 
+									$vulnerability['fixed_in'] 
+								);
+				}
+				$string .=       '<tr>';
+				$string .=          '<td style="padding: 4px 15px 4px 0;"><strong>' . $vulnerability['title'] . '</strong></td>';
+				$string .=          '<td style="padding: 4px 15px 4px 0;">' . $fixed_in . '</td>';
+				$string .=       '</tr>';
+
+			}
+
+			$string .=       '</table>';
+
 			$string .=    '</td>';
 			$string .= '</tr>';
 

@@ -4,7 +4,6 @@ detailed email with vulnerabilities
 check past plugin vulnerabilities
 error message if email fails to send automatically
 Translate settings page title
-look into https://codex.wordpress.org/Function_Reference/wp_remote_get
 
 check past vulnerabilities button while searching plugins
 on update/install - js check vulnerabilities
