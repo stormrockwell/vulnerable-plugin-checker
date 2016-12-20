@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.3.5
+		Version: 0.3.9
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2
@@ -27,7 +27,6 @@
 		public $title;
 		public $menu_title;
 		public $api_url = 'https://wpvulndb.com/api/v2/plugins/';
-		public $vulnerability_url = 'https://wpvulndb.com/vulnerabilities/';
 
 		/**
 		 * Constructor
@@ -66,7 +65,7 @@
 		 * adds menu/submenu pages to the dashboard
 		 */
 		public function add_menu_pages() {
-			add_submenu_page( 'tools.php', $this->title, $this->menu_title, 'manage_options', 'vpc-settings', array( $this, 'settings_page' ) );
+			add_submenu_page( 'options-general.php', $this->title, $this->menu_title, 'manage_options', 'vpc-settings', array( $this, 'settings_page' ) );
 		}
 
 		/**
@@ -99,7 +98,7 @@
 			$string .=          '<tr valign="top">';
 			$string .=             '<th scope="row">' . __( 'Email Address:', 'vulnerable-plugin-checker' ) . '</th>';
 			$string .=             '<td>';
-			$string .=                '<input type="text" name="vpc_email_address" placeholder="' . esc_attr( get_option( 'admin_email' ) ) . '" value="' . esc_attr( get_option( 'email_address' ) ) . '" />';
+			$string .=                '<input type="text" name="vpc_email_address" placeholder="' . esc_attr( get_option( 'admin_email' ) ) . '" value="' . esc_attr( get_option( 'vpc_email_address' ) ) . '" />';
 			$string .=             '</td>';
 			$string .=          '</tr>';
 			$string .=          '<tr valign="top">';
@@ -177,11 +176,12 @@
 		public function get_fresh_plugin_vulnerabilities( $plugin, $file_path ) {	
 
 			$plugin = $this->set_text_domain( $plugin );
-			$plugin_vuln = $this->get_plugin_security_json( $plugin['TextDomain'] );
+			$text_domain = $plugin['TextDomain'];
+			$plugin_vuln = $this->get_plugin_security_json( $text_domain );
 
-			if ( is_object( $plugin_vuln ) && isset( $plugin_vuln->$plugin['TextDomain']->vulnerabilities ) ) {
+			if ( is_object( $plugin_vuln ) && property_exists( $plugin_vuln, $text_domain ) && is_array( $plugin_vuln->$text_domain->vulnerabilities ) ) {
 
-				foreach ( $plugin_vuln->$plugin['TextDomain']->vulnerabilities as $vulnerability ) {
+				foreach ( $plugin_vuln->$text_domain->vulnerabilities as $vulnerability ) {
 
 					$plugin['vulnerabilities'][] = $vulnerability;
 
@@ -319,7 +319,7 @@
 		public function get_plugin_security_json( $text_domain ) {
 
 			$url = $this->api_url . $text_domain;
-			$request = wp_remote_get( $url );
+			$request = wp_remote_get( $url, array( 'sslverify' => false ) );
 
 			if ( is_wp_error( $request ) ) {
 			    return false;

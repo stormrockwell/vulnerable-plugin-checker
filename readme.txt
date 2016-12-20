@@ -3,7 +3,7 @@ Contributors: stormrockwell
 Tags: vulnerable,vulnerability,plugin,plugins,checker,scanner,wpscan,wpvulndb,security
 Requires at least: 4.0
 Tested up to: 4.7
-Stable tag: 0.3.5
+Stable tag: 0.3.9
 License: GPLv2
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
@@ -31,7 +31,7 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 
 **Enable Email Updates**
 
-1. After activating "Vulnerable Plugin Checker", go to Tools > VPC Settings
+1. After activating "Vulnerable Plugin Checker", go to Settings > VPC Settings
 2. Check off "Allow Email Alerts" and enter your email in "Email Address"
 3. Click Save Changes
 
@@ -39,9 +39,27 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 == Screenshots ==
 
 1. Backend display of the Plugins page (plugins.php)
-2. Backend display of the VPC Settings page (Tools > VPC Settings)
+2. Backend display of the VPC Settings page (Settings > VPC Settings)
 
 == Changelog ==
+
+= 0.3.9 =
+
+- Fixed notice appearing on PHP7+
+
+= 0.3.8 =
+
+- fixed bug where it wouldn't display the saved email
+
+= 0.3.7 =
+
+- removed sslverify on wp_remote_get
+
+= 0.3.6 =
+
+- changed cURL to wp_remote_get
+- added vulnerabilities on plugin page
+- fixed issue with plugin not pulling from cache
 
 = 0.3.5 =
 
@@ -58,11 +76,10 @@ This plugin automatically checks installed plugins for known vulnerabilities uti
 = 0.3 =
 
 - Rewrote the plugin for better performance, readability, and more
-- Dismissable error message site-wide if there is a vulnerability
+- Dismissable error message in all back-end pages if there is a vulnerability
 - Added SMTP suggestion to prevent dropped emails
 - Removed success notice from plugin page if there are no vulnerabilities
 - Fixed a few non-breaking bugs
-- Added PHP support 5.2.4 and up
 - Added translatable text and translator comments. Translation help is welcome!
 - Added todo.txt to see my plans for future updates.
 

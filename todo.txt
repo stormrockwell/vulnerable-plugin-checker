@@ -1,5 +1,4 @@
 add email frequency option
-View Vulnerabilities as a dropdown
 detailed email with vulnerabilities
 check past plugin vulnerabilities
 error message if email fails to send automatically
