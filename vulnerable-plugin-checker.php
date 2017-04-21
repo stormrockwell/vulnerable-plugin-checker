@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.3.9
+		Version: 0.3.10
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2
@@ -150,7 +150,7 @@
 
 						// if plugin fix is greater than current version, assume it could be vulnerable
 						$plugin['is_known_vulnerable'] = 'false';
-						if ( version_compare( $vulnerability['fixed_in'], $plugin['Version'] ) > 0 ) {			
+						if ( null == $vulnerability['fixed_in'] || version_compare( $vulnerability['fixed_in'], $plugin['Version'] ) > 0 ) {			
 							$plugin['is_known_vulnerable'] = 'true';
 						}
 
@@ -187,7 +187,7 @@
 
 					// if plugin fix is greater than current version, assume it could be vulnerable
 					$plugin['is_known_vulnerable'] = 'false';
-					if ( version_compare( $vulnerability->fixed_in, $plugin['Version'] ) > 0 ) {			
+					if ( null == $vulnerability->fixed_in ||  version_compare( $vulnerability->fixed_in, $plugin['Version'] ) > 0 ) {			
 						$plugin['is_known_vulnerable'] = 'true';
 					}
 
