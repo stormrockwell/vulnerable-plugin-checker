@@ -187,7 +187,7 @@
 
 					// if plugin fix is greater than current version, assume it could be vulnerable
 					$plugin['is_known_vulnerable'] = 'false';
-					if ( null == $vulnerability->fixed_in ||  version_compare( $vulnerability->fixed_in, $plugin['Version'] ) > 0 ) {			
+					if ( null == $vulnerability->fixed_in || version_compare( $vulnerability->fixed_in, $plugin['Version'] ) > 0 ) {			
 						$plugin['is_known_vulnerable'] = 'true';
 					}
 
@@ -251,7 +251,7 @@
 			if ( ! empty( $vuln_plugins ) && $email && get_option( 'vpc_allow_emails' ) ) {
 
 				$plugins_url = get_admin_url( null, 'plugins.php' );
-				$vpc_url = get_admin_url( null, 'tools.php?page=vpc-settings' );
+				$vpc_url = get_admin_url( null, 'options-general.php?page=vpc-settings' );
 
 				$message = sprintf(
 								/* translators: 1: plugins url, 2: Vulnerable Plugin Checker, 3: Vulnerable Plugin Checker url */
@@ -461,7 +461,7 @@
 		 * @param array $links links that appear in the plugin row
 		 */
 		public function add_settings_link( $links ) {
-		    $links[] = '<a href="' . get_admin_url( null, 'tools.php?page=vpc-settings' ) . '">Settings</a>';
+		    $links[] = '<a href="' . get_admin_url( null, 'options-general.php?page=vpc-settings' ) . '">Settings</a>';
 		    return $links;
 		}
 
