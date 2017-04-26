@@ -3,7 +3,6 @@ detailed email with vulnerabilities
 check past plugin vulnerabilities
 error message if email fails to send automatically
 translate settings page title
-show only vulnerabilities that effect the current version installed
 
 check past vulnerabilities button while searching plugins
 on update/install - js check vulnerabilities

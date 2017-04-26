@@ -3,7 +3,7 @@
 		Plugin Name: Vulnerable Plugin Checker
 		Plugin URI: https://www.eridesignstudio.com/vulnerable-plugin-checker
 		Description: Automatically checks installed plugins for known vulnerabilities utilizing WPScan's API and provides optional email alerts.
-		Version: 0.3.10
+		Version: 0.3.11
 		Author: Storm Rockwell
 		Author URI: http://www.stormrockwell.com
 		License: GPL2v2
@@ -401,18 +401,23 @@
 			$vulnerabilities = $this->get_cached_plugin_vulnerabilities( $vpc_plugin_data[ $plugin_file ], $plugin_file );
 			foreach ( $vulnerabilities['vulnerabilities'] as $vulnerability ) {
 
-				$fixed_in = '';
-				if ( isset( $vulnerability['fixed_in'] ) ) {
-					$fixed_in = sprintf( 
-									/* translators: %s: plugin version number */
-									__( 'Fixed in version: %s' ), 
-									$vulnerability['fixed_in'] 
-								);
+				if ( null == $vulnerability['fixed_in'] || $vulnerability['fixed_in'] > $plugin_data['Version'] ) {
+
+					$fixed_in = '';
+					if ( null !== $vulnerability['fixed_in'] ) {
+						$fixed_in = sprintf( 
+										/* translators: %s: plugin version number */
+										__( 'Fixed in version: %s' ), 
+										$vulnerability['fixed_in'] 
+									);
+					}
+
+					$string .=       '<tr>';
+					$string .=          '<td style="padding: 4px 15px 4px 0;"><strong>' . $vulnerability['title'] . '</strong></td>';
+					$string .=          '<td style="padding: 4px 15px 4px 0;">' . $fixed_in . '</td>';
+					$string .=       '</tr>';
+
 				}
-				$string .=       '<tr>';
-				$string .=          '<td style="padding: 4px 15px 4px 0;"><strong>' . $vulnerability['title'] . '</strong></td>';
-				$string .=          '<td style="padding: 4px 15px 4px 0;">' . $fixed_in . '</td>';
-				$string .=       '</tr>';
 
 			}
 
